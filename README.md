@@ -12,6 +12,15 @@ The focus is the **backend** (Express + MongoDB); the React client is a small de
 | UI | React + Vite |
 | Docs | OpenAPI 3 at `/api/docs` (Swagger UI) and `/api/openapi.json` |
 
+## Live demo
+
+* App: [Drive](https://drive-w8r4.onrender.com/)
+* API docs (Swagger UI): [/api/docs](https://drive-w8r4.onrender.com/api/docs)
+
+Hosted on Render's free tier with MongoDB Atlas. The service sleeps after about 15 minutes without traffic, so the first request
+can take around a minute. **Uploaded files are stored on the instance's ephemeral disk and may be lost on restart or redeploy**
+(user accounts and file metadata live in Atlas and are kept). See [Deployment](#deployment).
+
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for schema design, permission model and trade-offs.
 
 ## Project layout
@@ -73,6 +82,22 @@ Read from `server/.env` (see `.env.example`).
 | `BCRYPT_ROUNDS` | `12` | Password hashing cost |
 | `CORS_ORIGIN` | `http://localhost:5173` | Allowed browser origin |
 | `AUTH_RATE_LIMIT_PER_MIN` | `30` | Per-IP limit on `/api/auth/*` |
+
+## Deployment
+
+The live demo runs as a single Render web service (the API also serves the built React UI) backed by MongoDB Atlas.
+
+| Setting | Value |
+|---|---|
+| Build command | `npm install --include=dev && npm run build` |
+| Start command | `npm start` |
+| Health check path | `/api/health` |
+| Environment | `JWT_SECRET`, `MONGODB_URI` (Atlas connection string ending in `/drive`) |
+
+`npm run build` builds the client and copies it to `server/public/`, which the server serves. Atlas must allow the host's IP
+(`0.0.0.0/0` on Render's free tier, since it has no fixed IP).
+
+For files that survive restarts, attach a persistent disk (paid Render instance) or use a VPS, and point `STORAGE_DIR` at it.
 
 ## Tests
 
@@ -161,6 +186,7 @@ per-user quota; failure rollback; OpenAPI docs; tests; local run instructions.
 compare-and-set on the file) and version pruning.
 
 **Not implemented / known limitations**
+- Deployed on a free tier: uploaded file contents are ephemeral and can be lost on restart/redeploy (metadata in Atlas persists, so downloads of lost files return `410 BLOB_MISSING`). Use a persistent disk or an S3-style storage implementation for production.
 - Resumable/chunked uploads, content-hash deduplication (hashes *are* stored per version, so it's a small step), search, thumbnails, load tests.
 - No multi-document transactions (a standalone MongoDB has none). Uploads and deletes use ordered steps with compensation instead; see the architecture notes.
   A hard process crash at the wrong instant can leave an unreferenced blob or a slightly-off `storageUsed`; there is no reconciliation job yet.
