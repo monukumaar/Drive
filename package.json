@@ -1,0 +1,14 @@
+{
+  "name": "drive",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["server", "client"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
+    "install:all": "npm install",
+    "test": "npm test -w server",
+    "build": "npm run build -w client && node -e \"require('fs').cpSync('client/dist','server/public',{recursive:true})\"",
+"start": "npm start -w server"
+  },
+  "devDependencies": { "concurrently": "^9.1.2" }
+}
