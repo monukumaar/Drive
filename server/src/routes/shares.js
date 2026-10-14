@@ -48,8 +48,11 @@ module.exports = (kind) => {
     const { item, role } = await loadItem(kind, req.valid.params.id, req.user, 'viewer');
     const { userId } = req.valid.params;
     if (role !== 'owner' && userId !== String(req.user._id)) throw forbidden('Only the owner can revoke other users');
-    const result = await Model.updateOne({ _id: item._id }, { $pull: { shares: { user: userId } } });
-    if (result.modifiedCount === 0) throw notFound('That user does not have a share on this item');
+    const result = await Model.updateOne(
+  { _id: item._id, 'shares.user': userId },
+  { $pull: { shares: { user: userId } } }
+);
+if (result.matchedCount === 0) throw notFound('That user does not have a share on this item');
     audit(req, { action: `${kind}.unshare`, targetType: kind, targetId: item._id, owner: item.owner, meta: { userId } });
     res.status(204).end();
   }));
